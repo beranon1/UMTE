@@ -1,27 +1,39 @@
 package com.example.projekt
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.projekt.screens.*
 import com.example.projekt.ui.theme.ProjektTheme
 import com.example.projekt.viewModels.WeatherViewModel
+import com.google.android.gms.location.LocationServices
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.context.startKoin
+import android.Manifest
+import android.location.Geocoder
+import androidx.compose.ui.graphics.Color
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,9 +42,28 @@ class MainActivity : ComponentActivity() {
             androidContext(this@MainActivity)
             modules(appModule)
         }
+
+        val requestPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+                if (isGranted) {
+                    // Oprávnění bylo uděleno – můžeš získat polohu
+                } else {
+                    // Oprávnění bylo zamítnuto – můžeš zobrazit zprávu
+                }
+            }
+
         setContent {
+            val permissionStatus = remember {
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+
+            if (permissionStatus != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+            val viewModel: WeatherViewModel = koinViewModel()
+            val navController = rememberNavController()
             ProjektTheme {
-                WeatherApp()
+                WeatherApp(viewModel, navController)
             }
         }
     }
@@ -40,8 +71,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WeatherApp() {
-    val navController = rememberNavController()
+fun WeatherApp(viewModel: WeatherViewModel, navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -65,7 +95,7 @@ fun Navigation(navController: NavHostController, innerPadding: PaddingValues) {
     ) {
         composable("main") {
             val viewModel: WeatherViewModel = koinViewModel()
-            WeatherMainScreen(viewModel)
+            WeatherMainScreen(viewModel, navController)
         }
         composable("detail") { DetailScreen(navController) }
         composable("favourites") { FavouriteCityScreen(navController) }
@@ -93,6 +123,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         }
     }
 }
+
 
 
 data class BottomNavItem(val title: String, val icon: ImageVector, val screenRoute: String)

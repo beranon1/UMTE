@@ -1,20 +1,33 @@
 package com.example.projekt.items
 
+import com.google.gson.annotations.SerializedName
+
 data class WeatherResponse(
-    val location: Location,
-    val current: CurrentWeather
+    @SerializedName("WeatherIcon") val weatherIcon: Int,
+    @SerializedName("Temperature") val temperature: TemperatureResponse,
+    @SerializedName("Wind") val wind: WindResponse,
+    @SerializedName("RelativeHumidity") val humidity: Int,
+    @SerializedName("Visibility") val visibility: VisibilityResponse
 )
 
-data class Location(
-    val name: String,
-    val country: String
+data class TemperatureResponse(
+    @SerializedName("Metric") val metric: MetricResponse
 )
 
-data class CurrentWeather(
-    val temperature: Int,
-    val weather_descriptions: List<String>,
-    val wind_speed: Int,
-    val humidity: Int,
-    val visibility: Int,
-    val weather_icons: List<String>
+data class MetricResponse(
+    @SerializedName("Value") val value: Double
 )
+
+data class WindResponse(
+    @SerializedName("Speed") val speed: SpeedResponse
+)
+
+data class SpeedResponse(
+    @SerializedName("Metric") val metric: MetricResponse
+)
+
+data class VisibilityResponse(
+    @SerializedName("Metric") val metric: MetricResponse
+)
+
+
