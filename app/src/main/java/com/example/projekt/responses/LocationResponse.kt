@@ -1,4 +1,4 @@
-package com.example.projekt.items
+package com.example.projekt.responses
 
 import com.google.gson.annotations.SerializedName
 

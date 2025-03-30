@@ -1,6 +1,8 @@
 package com.example.projekt.api
 
-import com.example.projekt.items.WeatherResponse
+import com.example.projekt.responses.CityResponse
+import com.example.projekt.responses.WeatherResponse
+import com.example.projekt.responses.WeatherDetailResponse
 import okhttp3.ResponseBody
 import retrofit2.Response
 
@@ -27,4 +29,18 @@ interface WeatherApi {
         @Query("q") city: String,
         @Query("apikey") apiKey: String,
     ): Response<ResponseBody>
+
+    @GET("currentconditions/v1/{locationKey}")
+    suspend fun getWeatherDetail(
+        @Path("locationKey") locationKey: String,
+        @Query("apikey") apiKey: String,
+        @Query("details") details: Boolean = true
+    ): List<WeatherDetailResponse>
+
+    @GET("locations/v1/cities/{countryCode}")
+    suspend fun getCities(
+        @Path("countryCode") countryCode: String,
+        @Query("apikey") apiKey: String,
+        @Query("language") language: String = "cs" // Přidání češtiny jako výchozí jazyk
+    ): List<CityResponse>
 }

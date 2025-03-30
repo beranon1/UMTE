@@ -1,8 +1,11 @@
 package com.example.projekt
 
+import androidx.lifecycle.SavedStateHandle
 import com.example.projekt.api.WeatherApi
 import com.example.projekt.location.LocationProvider
 import com.example.projekt.repository.WeatherRepository
+import com.example.projekt.viewModels.CityViewModel
+import com.example.projekt.viewModels.WeatherDetailViewModel
 import com.example.projekt.viewModels.WeatherViewModel
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
@@ -10,6 +13,22 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
+
+
+val repositoryModule = module{
+    single { WeatherRepository(get()) }
+}
+
+val viewModelModule = module{
+    viewModel { (savedStateHandle: SavedStateHandle) ->
+        WeatherViewModel(get(), get(), savedStateHandle)
+    }
+    viewModel{ (savedStateHandle: SavedStateHandle) ->
+        WeatherDetailViewModel(get(), get(), savedStateHandle)
+    }
+    viewModel{ CityViewModel(get())}
+    single { LocationProvider(androidContext()) }
+}
 
 val appModule = module {
     single<WeatherApi> {
@@ -30,8 +49,5 @@ val appModule = module {
             .build()
             .create(WeatherApi::class.java)
     }
-    single { WeatherRepository(get()) }
-    single { LocationProvider(androidContext()) }
-    viewModel { WeatherViewModel(get()) }
 }
 

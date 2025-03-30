@@ -7,28 +7,24 @@ import android.location.Location
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.tasks.await
-
 import java.util.Locale
 
-class LocationProvider(context: Context) {
+class LocationProvider(private val context: Context) {
 
     private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(context)
-    private val geocoder = Geocoder(context, Locale.getDefault())
 
     @SuppressLint("MissingPermission")
-    suspend fun getCurrentLocation(): Location? {
+    suspend fun getCityName(): String? {
         return try {
-            fusedLocationClient.lastLocation.await()
+            val location: Location? = fusedLocationClient.lastLocation.await()
+            location?.let {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(it.latitude, it.longitude, 1)
+                addresses?.firstOrNull()?.locality ?: addresses?.firstOrNull()?.subAdminArea
+            }
         } catch (e: Exception) {
             null
         }
-    }
-
-    fun getCityFromCoordinates(location: Location?): String {
-        location ?: return "Pardubice" // Výchozí město pokud nelze určit polohu
-
-        val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-        return addresses?.firstOrNull()?.locality ?: "Pardubice"
     }
 }

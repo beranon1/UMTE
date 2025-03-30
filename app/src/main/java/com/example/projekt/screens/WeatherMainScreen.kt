@@ -1,15 +1,12 @@
 package com.example.projekt.screens
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.location.Geocoder
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Air
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.EmojiPeople
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -18,39 +15,49 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.example.projekt.items.WeatherResponse
+import com.example.projekt.responses.WeatherResponse
 import com.example.projekt.viewModels.WeatherViewModel
 import coil.compose.AsyncImage
-import com.google.android.gms.location.LocationServices
-import java.util.Locale
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun WeatherMainScreen(viewModel: WeatherViewModel, navController: NavHostController) {
+fun WeatherMainScreen(viewModel: WeatherViewModel= koinViewModel(), navController: NavHostController) {
     val weather by viewModel.weatherData.observeAsState()
     val location by viewModel.city.observeAsState()
+
+    LaunchedEffect (Unit) {
+        viewModel.updateLocation()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ){
 
-        IconButton(onClick = {
-            getCurrentLocation(navController.context, viewModel)
-        }) {
-            Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Získat polohu", tint = Color.Black)
+        // Tlačítko pro získání polohy
+        Button(
+            //onClick = { getCurrentLocation(navController.context, viewModel) },
+            onClick = { viewModel.updateLocation() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Získat polohu", tint = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "Získat aktuální polohu")
         }
 
-        weather?.let { location?.let { it1 -> WeatherContent(it, it1, navController, viewModel) } }
+        Spacer(modifier = Modifier.height(16.dp))
 
-
+        weather?.let { location?.let { it1 -> WeatherContent(it, it1) } }
     }
 }
 
 @Composable
-fun WeatherContent(weather: WeatherResponse, location: String, navController: NavHostController, viewModel: WeatherViewModel) {
+fun WeatherContent(weather: WeatherResponse, location: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -60,7 +67,7 @@ fun WeatherContent(weather: WeatherResponse, location: String, navController: Na
 
         // Město a stát
         Text(
-            text = "${location} ",
+            text = location,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -89,41 +96,43 @@ fun WeatherContent(weather: WeatherResponse, location: String, navController: Na
         Spacer(modifier = Modifier.height(16.dp))
 
         // Další informace o počasí
-        WeatherDetailRow(Icons.Default.Air, "Vítr", "${weather.wind.speed.metric.value} km/h")
-        WeatherDetailRow(Icons.Default.WaterDrop, "Vlhkost", "${weather.humidity}%")
-        WeatherDetailRow(Icons.Default.Visibility, "Viditelnost", "${weather.visibility.metric.value} km")
+        WeatherDetailRow(Icons.Default.WbSunny, "UV Index: ", "${weather.uvIndex}")
+        WeatherDetailRow(Icons.Default.EmojiPeople, "Pocitová teplota: ", weather.realFeelTemperature.metric.value.let { "$it °C" } ?: "N/A")
+        WeatherDetailRow(Icons.Default.AcUnit, "Minimální teplota: ", weather.temperatureSummary.past24HourRange.minTemperature.metric.value.let { "$it °C" } ?: "N/A")
+        WeatherDetailRow(Icons.Default.Whatshot, "Maximální teplota: ", weather.temperatureSummary.past24HourRange.maxTemperature.metric.value.let { "$it °C" } ?: "N/A")
+
     }
 }
 
 @Composable
 fun WeatherDetailRow(icon: ImageVector, label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary)
-        Text(text = label, fontWeight = FontWeight.Medium)
-        Text(text = value, fontWeight = FontWeight.Bold)
-    }
-}
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
 
-@SuppressLint("MissingPermission") // Potřebuješ předtím ověřit oprávnění
-fun getCurrentLocation(context: Context, viewModel: WeatherViewModel) {
-    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+        Spacer(modifier = Modifier.width(8.dp)) // Mezera mezi ikonou a textem
 
-    try {
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            location?.let {
-                val geocoder = Geocoder(context, Locale.getDefault())
-                val addresses = geocoder.getFromLocation(it.latitude, it.longitude, 1)
-                val cityName = addresses?.firstOrNull()?.locality ?: "Neznámé město"
-                viewModel.updateCity(cityName)
-                // Zde potřebuji zavolat WeatherMainScreen
-            }
-        }
-    } catch (e: SecurityException) {
-        Log.e("Location", "Přístup k poloze odepřen", e)
+        Text(
+            text = label,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f) // Zajišťuje zarovnání popisku doleva
+        )
+
+        Text(
+            text = value,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f), // Zajišťuje zarovnání hodnoty doprava
+            textAlign = TextAlign.End // Zarovnání textu na pravou stranu
+        )
     }
 }
 

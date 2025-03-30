@@ -72,7 +72,8 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.4.0")
 
-    implementation ("androidx.compose.material:material-icons-extended:1.5.0")
+    implementation ("com.google.android.material:material:1.7.0")
+    implementation ("androidx.compose.material:material-icons-extended:1.0.1")
 
     implementation("com.google.android.gms:play-services-location:21.0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1")
