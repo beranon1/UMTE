@@ -3,6 +3,7 @@ package com.example.projekt.responses
 import com.google.gson.annotations.SerializedName
 
 data class WeatherResponse(
+    val location: LocationResponse,
     @SerializedName("WeatherIcon") val weatherIcon: Int,
     @SerializedName("Temperature") val temperature: TemperatureResponse,
     @SerializedName("RealFeelTemperature") val realFeelTemperature: TemperatureResponse,

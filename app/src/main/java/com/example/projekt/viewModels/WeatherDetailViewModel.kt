@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.projekt.api.SetApi
 import com.example.projekt.location.LocationProvider
 import com.example.projekt.responses.WeatherDetailResponse
 import com.example.projekt.repository.WeatherRepository
@@ -51,7 +52,7 @@ class WeatherDetailViewModel (
     fun updateCity(newCity: String) {
         _city.value = newCity
         savedStateHandle["city"] = newCity // Uloží město do SavedStateHandle
-        fetchLocationKey(newCity, "n9PG3GhsqjHzpf9obRKuZoAxtvHM0iev")
+        fetchLocationKey(newCity, SetApi.getApi)
     }
 
     fun updateLocation() {

@@ -26,7 +26,7 @@ val viewModelModule = module{
     viewModel{ (savedStateHandle: SavedStateHandle) ->
         WeatherDetailViewModel(get(), get(), savedStateHandle)
     }
-    viewModel{ CityViewModel(get())}
+    viewModel{ CityViewModel(get(),get())}
     single { LocationProvider(androidContext()) }
 }
 

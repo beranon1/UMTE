@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    //id("com.google.protobuf") version "0.9.4" // Přidání Protobuf pluginu
 }
 
 android {
@@ -38,9 +39,23 @@ android {
         compose = true
     }
 }
-
+/*
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.21.12"
+    }
+    generateProtoTasks {
+        all().configureEach {
+            builtins {
+                java {
+                    option("lite") // Použití Protobuf lite verze
+                }
+            }
+        }
+    }
+}
+*/
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -79,4 +94,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.1")
 
     implementation("org.json:json:20210307")
+
+    // DataStore Preferences a Protobuf
+    implementation ("androidx.datastore:datastore-preferences:1.0.0")
+    implementation ("androidx.datastore:datastore:1.0.0")
 }

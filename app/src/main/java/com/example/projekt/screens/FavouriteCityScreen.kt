@@ -1,5 +1,6 @@
 package com.example.projekt.screens
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 
@@ -14,7 +15,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
 import com.example.projekt.viewModels.CityViewModel
+import com.example.projekt.viewModels.WeatherViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -22,18 +27,44 @@ data class City(val name: String, val temperature: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FavouriteCityScreen(viewModel: CityViewModel = koinViewModel()) {
-
-    LaunchedEffect (Unit) {
-        viewModel.fetchCityKey()
-    }
+fun FavouriteCityScreen(cityViewModel: CityViewModel = koinViewModel(), weatherViewModel: WeatherViewModel = koinViewModel()) {
 
     var selectedCity by remember { mutableStateOf<String?>(null) }
     var favouriteCities by remember { mutableStateOf<List<City>>(emptyList()) }
     var isMenuExpanded by remember { mutableStateOf(false) }
 
-    val weather by viewModel.cityData.observeAsState(emptyList())
-    val allCities = weather.map { it.localizedName }
+    val location by cityViewModel.cityData.observeAsState(emptyList())
+    val allCities = location.map { it.localizedName }
+
+    val weather by weatherViewModel.weatherData.collectAsState()
+
+    LaunchedEffect(Unit) {
+        cityViewModel.fetchCityKey()
+
+        // Načteme města z DataStore
+        cityViewModel.getFavouriteCitiesFromDataStore { cities ->
+            // Inicializace seznamu měst s výchozí hodnotou teploty "Načítání..."
+            favouriteCities = cities.map { City(it, "Načítání...") }
+
+            // Po načtení měst zavoláme aktualizaci počasí pro všechna města
+            weatherViewModel.updateWeatherForCities(favouriteCities.map { it.name })
+        }
+
+        // Používáme collect pro sledování počasí pro všechna města
+        launch {
+            weatherViewModel.cityWeatherMap.collectLatest { cityWeatherMap ->
+                // Pro každé město, pokud máme počasí, uložíme ho a aktualizujeme seznam měst
+                favouriteCities = favouriteCities.map { city ->
+                    // Pokud máme počasí pro město, aktualizujeme teplotu
+                    val weather = cityWeatherMap[city.name]
+                    weather?.let {
+                        val temperature = it.temperature?.metric?.value?.let { "$it°C" } ?: "N/A"
+                        city.copy(temperature = temperature)  // Aktualizujeme teplotu v objektu města
+                    } ?: city  // Pokud počasí není, necháme město beze změny
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -67,6 +98,7 @@ fun FavouriteCityScreen(viewModel: CityViewModel = koinViewModel()) {
                     DropdownMenuItem(
                         text = { Text(cityName) },
                         onClick = {
+                            weatherViewModel.updateCity(cityName)
                             selectedCity = cityName // Nastaví vybrané město
                             isMenuExpanded = false // Zavře menu po výběru města
                         },
@@ -83,8 +115,10 @@ fun FavouriteCityScreen(viewModel: CityViewModel = koinViewModel()) {
         Button(
             onClick = {
                 selectedCity?.let { cityName ->
-                    val city = City(cityName, "25°C") // Město s teplotou
+                    val city = City(cityName, "${weather?.temperature?.metric?.value}°C") // Město s teplotou
+                    //Log.d("Teplota_oblibene", "Teplota => ${weather?.temperature?.metric?.value}")
                     favouriteCities = favouriteCities + city
+                    cityViewModel.saveCityToDataStore(cityName)
                     selectedCity = null // Vymaže vybrané město po přidání
                 }
             },
@@ -99,9 +133,13 @@ fun FavouriteCityScreen(viewModel: CityViewModel = koinViewModel()) {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(favouriteCities.size) { index ->
                 val city = favouriteCities[index]
+                Log.d("Oblibena_města","Oblíbená =>  ${city}")
                 FavouriteCityItem(city) {
                     // Odstranění města z oblíbených
                     favouriteCities = favouriteCities.filterNot { it.name == city.name }
+
+                    // Zavolání funkce pro odstranění města z DataStore
+                    cityViewModel.removeCityFromDataStore(city.name)
                 }
             }
         }
@@ -120,12 +158,12 @@ fun FavouriteCityItem(city: City, onRemove: () -> Unit) {
         Text(
             text = city.name,
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge
+            fontWeight = FontWeight.Medium
         )
         Text(
             text = city.temperature,
             modifier = Modifier.padding(end = 16.dp),
-            style = MaterialTheme.typography.bodySmall
+            fontWeight = FontWeight.Medium
         )
         IconButton(onClick = onRemove) {
             Icon(

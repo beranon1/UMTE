@@ -25,7 +25,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun WeatherMainScreen(viewModel: WeatherViewModel= koinViewModel(), navController: NavHostController) {
-    val weather by viewModel.weatherData.observeAsState()
+    val weather by viewModel.weatherData.collectAsState()
     val location by viewModel.city.observeAsState()
 
     LaunchedEffect (Unit) {
