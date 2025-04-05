@@ -26,6 +26,10 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.context.startKoin
 import android.Manifest
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.projekt.viewModels.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,7 +58,22 @@ class MainActivity : ComponentActivity() {
                 requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             }
             val navController = rememberNavController()
-            ProjektTheme {
+
+
+            // 👉 Získání SettingsViewModel
+            val settingsViewModel = viewModel<SettingsViewModel>(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return SettingsViewModel(applicationContext) as T
+                    }
+                }
+            )
+
+            val isDarkTheme by settingsViewModel.isDarkTheme.collectAsState()
+
+            // ✅ Předání hodnoty motivu do ProjektTheme
+            ProjektTheme(darkTheme = isDarkTheme) {
                 WeatherApp(navController)
             }
         }
@@ -67,8 +86,15 @@ fun WeatherApp( navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Weather App") },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
+                title = {
+                    Text(
+                        text = "Weather App",
+                        color = MaterialTheme.colorScheme.onPrimary // kontrastní text
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary // automaticky světlé/tmavé pozadí
+                )
             )
         },
         bottomBar = { BottomNavigationBar(navController) }
@@ -82,7 +108,7 @@ fun WeatherApp( navController: NavHostController) {
 fun Navigation(navController: NavHostController, innerPadding: PaddingValues) {
     NavHost(
         navController = navController,
-        startDestination = "main",
+        startDestination = "settings",
         modifier = Modifier.padding(innerPadding) // 🛠 Aplikace paddingu
     ) {
         composable("main") {

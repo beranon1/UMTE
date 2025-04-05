@@ -5,6 +5,7 @@ import com.example.projekt.api.WeatherApi
 import com.example.projekt.location.LocationProvider
 import com.example.projekt.repository.WeatherRepository
 import com.example.projekt.viewModels.CityViewModel
+import com.example.projekt.viewModels.SettingsViewModel
 import com.example.projekt.viewModels.WeatherDetailViewModel
 import com.example.projekt.viewModels.WeatherViewModel
 import okhttp3.OkHttpClient
@@ -27,7 +28,10 @@ val viewModelModule = module{
         WeatherDetailViewModel(get(), get(), savedStateHandle)
     }
     viewModel{ CityViewModel(get(),get())}
+
     single { LocationProvider(androidContext()) }
+
+    viewModel{SettingsViewModel(get())}
 }
 
 val appModule = module {

@@ -133,7 +133,7 @@ fun FavouriteCityScreen(cityViewModel: CityViewModel = koinViewModel(), weatherV
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(favouriteCities.size) { index ->
                 val city = favouriteCities[index]
-                Log.d("Oblibena_města","Oblíbená =>  ${city}")
+                //Log.d("Oblibena_města","Oblíbená =>  ${city}")
                 FavouriteCityItem(city) {
                     // Odstranění města z oblíbených
                     favouriteCities = favouriteCities.filterNot { it.name == city.name }

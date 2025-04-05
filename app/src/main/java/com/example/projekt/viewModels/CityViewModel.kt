@@ -35,7 +35,7 @@ class CityViewModel (
 
             try {
                 val response = repository.getCities("CZ", SetApi.getApi)
-                Log.d("WeatherViewModel", "Získaná města: $response")
+                //Log.d("WeatherViewModel", "Získaná města: $response")
                 _cityData.value = response
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Chyba při načítání počasí: ${e.message}")

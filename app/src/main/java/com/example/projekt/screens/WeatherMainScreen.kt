@@ -1,6 +1,9 @@
 package com.example.projekt.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.EmojiPeople
@@ -17,19 +20,34 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.projekt.responses.WeatherResponse
 import com.example.projekt.viewModels.WeatherViewModel
 import coil.compose.AsyncImage
+import com.example.projekt.api.SetApi
+import com.example.projekt.responses.DailyForecast
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun WeatherMainScreen(viewModel: WeatherViewModel= koinViewModel(), navController: NavHostController) {
     val weather by viewModel.weatherData.collectAsState()
-    val location by viewModel.city.observeAsState()
+    val city by viewModel.city.observeAsState()
+    val forecast by viewModel.forecastData.collectAsState()
+    val location by viewModel.locationKey.observeAsState()
+
 
     LaunchedEffect (Unit) {
         viewModel.updateLocation()
+
+    }
+
+    LaunchedEffect(location) {
+        location?.let {
+            Log.d("Location key", "Spouštím denní předpověď pro: $it")
+            viewModel.fetchForecast(it)
+        }
     }
 
     Column(
@@ -38,10 +56,12 @@ fun WeatherMainScreen(viewModel: WeatherViewModel= koinViewModel(), navControlle
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ){
+        if (weather == null) {
+            CircularProgressIndicator(modifier = Modifier.size(50.dp))
+        } else {
 
         // Tlačítko pro získání polohy
         Button(
-            //onClick = { getCurrentLocation(navController.context, viewModel) },
             onClick = { viewModel.updateLocation() },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -50,11 +70,83 @@ fun WeatherMainScreen(viewModel: WeatherViewModel= koinViewModel(), navControlle
             Text(text = "Získat aktuální polohu")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
-        weather?.let { location?.let { it1 -> WeatherContent(it, it1) } }
+        weather?.let { city?.let { it1 -> WeatherContent(it, it1) } }
+
+        forecast?.let { forecastData ->
+            ForecastSection(forecastData.dailyForecasts) { date ->
+                if (date.contains(",")) { // Už přeformátované datum
+                    date
+                } else {
+                    viewModel.formatDate(date)
+                }
+            }
+        }
+        }
     }
 }
+
+@Composable
+fun ForecastSection(dailyForecasts: List<DailyForecast>, formatDate: (String) -> String) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+        .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        dailyForecasts.forEach { forecast ->
+            ForecastCard(forecast, formatDate)
+        }
+    }
+}
+
+@Composable
+fun ForecastCard(forecast: DailyForecast, formatDate: (String) -> String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Ikona počasí
+            val iconUrl = "https://developer.accuweather.com/sites/default/files/${forecast.day.icon.toString().padStart(2, '0')}-s.png"
+            AsyncImage(
+                model = iconUrl,
+                contentDescription = "Weather Icon",
+                modifier = Modifier.size(50.dp)
+            )
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Datum a teploty
+            Column {
+                Text(
+                    text = formatDate(forecast.date), // Použití funkce z ViewModelu
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${forecast.temperature.minimum.value}°C / ${forecast.temperature.maximum.value}°C",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = forecast.day.iconPhrase,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
+
+
+
 
 @Composable
 fun WeatherContent(weather: WeatherResponse, location: String) {
@@ -70,6 +162,7 @@ fun WeatherContent(weather: WeatherResponse, location: String) {
             text = location,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
+            fontSize = 8.em,
             color = MaterialTheme.colorScheme.onBackground
         )
 
@@ -101,6 +194,16 @@ fun WeatherContent(weather: WeatherResponse, location: String) {
         WeatherDetailRow(Icons.Default.AcUnit, "Minimální teplota: ", weather.temperatureSummary.past24HourRange.minTemperature.metric.value.let { "$it °C" } ?: "N/A")
         WeatherDetailRow(Icons.Default.Whatshot, "Maximální teplota: ", weather.temperatureSummary.past24HourRange.maxTemperature.metric.value.let { "$it °C" } ?: "N/A")
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Předpověď",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            fontSize = 5.em,
+            textAlign = TextAlign.Left,
+            color = MaterialTheme.colorScheme.onBackground
+        )
     }
 }
 
