@@ -1,18 +1,18 @@
 package com.example.projekt.screens
 
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
@@ -25,39 +25,54 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.BlendMode.Companion.Color
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.projekt.ui.theme.Blue80
 import com.example.projekt.ui.theme.Purple40
-import com.example.projekt.ui.theme.PurpleGrey40
+import com.example.projekt.viewModels.NotificationContent
 import com.example.projekt.viewModels.SettingsViewModel
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.compose.runtime.LaunchedEffect
+import com.example.projekt.viewModels.WeatherDetailViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun SettingScreen(navController: NavController) {
-    val context = LocalContext.current.applicationContext
-    val settingsViewModel = viewModel<SettingsViewModel>(factory = object : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return SettingsViewModel(context) as T
-        }
-    })
+fun SettingScreen(navController: NavController, viewModel: SettingsViewModel = koinViewModel()) {
 
+    LaunchedEffect(Unit) {
+        viewModel.fetchLocationKey()
+    }
     // Observe the states for Dark Theme and Notifications
-    val isDarkTheme by settingsViewModel.isDarkTheme.collectAsState()
-    val notificationsEnabled by settingsViewModel.notificationsEnabled.collectAsState()
-    val notificationInterval by settingsViewModel.notificationInterval.collectAsState()
-    val notificationContent by settingsViewModel.notificationContent.collectAsState()
+    val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
+    val notificationInterval by viewModel.notificationInterval.collectAsState()
+    val notificationContent by viewModel.notificationContent.collectAsState()
 
     val selectedOption = remember { mutableStateOf("Teplota") }  // Začíná na "Teplota"
     val showDialog = remember { mutableStateOf(false) }
+
+
+    val contextForPermission = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                viewModel.updateNotificationsEnabled(true)
+                viewModel.scheduleNotification()
+            } else {
+                viewModel.updateNotificationsEnabled(false)
+                viewModel.cancelNotifications()
+            }
+        }
+    )
 
     Column(
         modifier = Modifier
@@ -83,7 +98,7 @@ fun SettingScreen(navController: NavController) {
             Text(text = "Tmavý režim", modifier = Modifier.weight(1f))
             Switch(
                 checked = isDarkTheme,
-                onCheckedChange = { settingsViewModel.toggleTheme(it) }
+                onCheckedChange = { viewModel.toggleTheme(it) }
             )
         }
 
@@ -97,7 +112,27 @@ fun SettingScreen(navController: NavController) {
             Text(text = "Zapnout notifikace", modifier = Modifier.weight(1f))
             Switch(
                 checked = notificationsEnabled,
-                onCheckedChange = { settingsViewModel.updateNotificationsEnabled(it) }
+                onCheckedChange = { isChecked ->
+                    if (isChecked) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            val permissionCheck = ContextCompat.checkSelfPermission(
+                                contextForPermission,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            )
+                            if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                                viewModel.updateNotificationsEnabled(true)
+                                viewModel.scheduleNotification()
+                            } else {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        } else {
+                            viewModel.updateNotificationsEnabled(true)
+                        }
+                    } else {
+                        viewModel.updateNotificationsEnabled(false)
+                        viewModel.cancelNotifications()
+                    }
+                }
             )
         }
 
@@ -115,7 +150,7 @@ fun SettingScreen(navController: NavController) {
                 Slider(
                     value = notificationInterval.toFloat(),
                     onValueChange = { newValue ->
-                        settingsViewModel.updateNotificationInterval(newValue.toInt())
+                        viewModel.updateNotificationInterval(newValue.toInt())
                     },
                     valueRange = 1f..24f,  // Nastavujeme rozsah hodnot od 1 do 24
                     steps = 23,  // 23 kroky mezi 1 a 24
@@ -154,7 +189,7 @@ fun SettingScreen(navController: NavController) {
 
                 // Zobrazení aktuálně vybrané možnosti vedle tlačítka
                 Text(
-                    text = selectedOption.value,
+                    text = notificationContent.name,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.align(Alignment.CenterVertically).padding(start = 40.dp)
                 )
@@ -169,15 +204,15 @@ fun SettingScreen(navController: NavController) {
                 text = {
                     Column {
                         TextButton(onClick = {
-                            selectedOption.value = "Pouze teplota"
-                            settingsViewModel.updateNotificationContent("Teplota")
+                            selectedOption.value = NotificationContent.TEPLOTA.name
+                            viewModel.updateNotificationContent(NotificationContent.TEPLOTA)
                             showDialog.value = false
                         }) {
                             Text("Teplota")
                         }
                         TextButton(onClick = {
-                            selectedOption.value = "Více informací"
-                            settingsViewModel.updateNotificationContent("Více informací")
+                            selectedOption.value = NotificationContent.VICE_INFORMACI.name
+                            viewModel.updateNotificationContent(NotificationContent.VICE_INFORMACI)
                             showDialog.value = false
                         }) {
                             Text("Více informací")

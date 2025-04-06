@@ -26,49 +26,32 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.context.startKoin
 import android.Manifest
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.example.projekt.viewModels.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        startKoin {
+       /* startKoin {
             androidContext(this@MainActivity)
             modules(appModule, repositoryModule, viewModelModule)
-        }
+        }*/
 
-        val requestPermissionLauncher =
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-                if (isGranted) {
-                    // Oprávnění bylo uděleno – můžeš získat polohu
-                } else {
-                    // Oprávnění bylo zamítnuto – můžeš zobrazit zprávu
-                }
-            }
-
+        createNotificationChannel()
+        checkAndRequestPermissions()
         setContent {
-            val permissionStatus = remember {
-                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-
-            if (permissionStatus != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
             val navController = rememberNavController()
 
 
             // 👉 Získání SettingsViewModel
-            val settingsViewModel = viewModel<SettingsViewModel>(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        @Suppress("UNCHECKED_CAST")
-                        return SettingsViewModel(applicationContext) as T
-                    }
-                }
-            )
+
+            val settingsViewModel: SettingsViewModel = koinViewModel()
 
             val isDarkTheme by settingsViewModel.isDarkTheme.collectAsState()
 
@@ -78,6 +61,37 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Weather Notifications"
+            val descriptionText = "Notifikace o počasí"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("weather_channel", name, importance).apply {
+                description = descriptionText
+            }
+
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.createNotificationChannel(channel)
+        }
+    }
+
+    private fun checkAndRequestPermissions() {
+        val locationPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        if (locationPermission != PackageManager.PERMISSION_GRANTED) {
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+
+    }
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                // Oprávnění pro polohu bylo uděleno
+            } else {
+                // Oprávnění pro polohu bylo zamítnuto
+            }
+        }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,7 +122,7 @@ fun WeatherApp( navController: NavHostController) {
 fun Navigation(navController: NavHostController, innerPadding: PaddingValues) {
     NavHost(
         navController = navController,
-        startDestination = "settings",
+        startDestination = "main",
         modifier = Modifier.padding(innerPadding) // 🛠 Aplikace paddingu
     ) {
         composable("main") {
@@ -142,6 +156,17 @@ fun BottomNavigationBar(navController: NavHostController) {
     }
 }
 
+fun showTestNotification(context: Context) {
+    val builder = NotificationCompat.Builder(context, "weather_channel")
+        .setSmallIcon(R.drawable.ic_launcher_foreground) // Tady zajisti, že máš platnou ikonu!
+        .setContentTitle("Test Notifikace")
+        .setContentText("Tohle je testovací notifikace o počasí.")
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setAutoCancel(true) // Notifikace zmizí po kliknutí
+        .setDefaults(NotificationCompat.DEFAULT_ALL) // Využití všech výchozích signálů, jako zvuk, vibrace
 
+    val notificationManager = NotificationManagerCompat.from(context)
+    notificationManager.notify(1001, builder.build())
+}
 
 data class BottomNavItem(val title: String, val icon: ImageVector, val screenRoute: String)

@@ -98,4 +98,9 @@ dependencies {
     // DataStore Preferences a Protobuf
     implementation ("androidx.datastore:datastore-preferences:1.0.0")
     implementation ("androidx.datastore:datastore:1.0.0")
+
+    implementation ("androidx.core:core:1.7.0")
+
+    implementation ("androidx.work:work-runtime-ktx:2.8.0")
+
 }

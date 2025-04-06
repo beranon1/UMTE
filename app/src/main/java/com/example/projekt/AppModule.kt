@@ -14,6 +14,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
+import java.util.concurrent.TimeUnit
 
 
 val repositoryModule = module{
@@ -31,7 +32,7 @@ val viewModelModule = module{
 
     single { LocationProvider(androidContext()) }
 
-    viewModel{SettingsViewModel(get())}
+    viewModel{SettingsViewModel(get(),get(),get())}
 }
 
 val appModule = module {
@@ -41,6 +42,9 @@ val appModule = module {
             .addConverterFactory(GsonConverterFactory.create())
             .client(
                 OkHttpClient.Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)  // Časový limit pro připojení
+                    .writeTimeout(30, TimeUnit.SECONDS)    // Časový limit pro zápis
+                    .readTimeout(30, TimeUnit.SECONDS)     // Časový limit pro čtení
                     .addInterceptor { chain ->
                         val request = chain.request().newBuilder()
                             .addHeader("User-Agent", "MyWeatherApp/1.0") // Přidání User-Agent
@@ -54,4 +58,5 @@ val appModule = module {
             .create(WeatherApi::class.java)
     }
 }
+
 
