@@ -7,13 +7,11 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.example.projekt.NotificationWorker
+import com.example.projekt.notification.NotificationWorker
 import com.example.projekt.api.SetApi
 import com.example.projekt.location.LocationProvider
 import com.example.projekt.repository.WeatherRepository
@@ -32,13 +30,13 @@ val notificationIntervalKey = intPreferencesKey("notification_interval")
 val notificationContentKey = stringPreferencesKey("notification_content")
 
 enum class NotificationContent {
-    TEPLOTA,
-    VICE_INFORMACI
+    TEPLOTA, VICE_INFORMACI
 }
 
-class SettingsViewModel(context: Context,
-                        private val repository: WeatherRepository,
-                        private val locationProvider: LocationProvider
+class SettingsViewModel(
+    context: Context,
+    private val repository: WeatherRepository,
+    private val locationProvider: LocationProvider
 ) : ViewModel() {
 
     private val appContext = context.applicationContext
@@ -47,11 +45,9 @@ class SettingsViewModel(context: Context,
     private val locationKey = stringPreferencesKey("locationKey")
 
 
-    val isDarkTheme = dataStore.data
-        .map { preferences ->
-            preferences[THEME_KEY] ?: false // výchozí: světlé téma
-        }
-        .stateIn(
+    val isDarkTheme = dataStore.data.map { preferences ->
+            preferences[THEME_KEY] ?: false
+        }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
@@ -65,40 +61,31 @@ class SettingsViewModel(context: Context,
         }
     }
 
-    // Správa notifikací
-    val notificationsEnabled = dataStore.data
-        .map { preferences ->
-            preferences[notificationsEnabledKey] ?: false // výchozí: vypnuto
-        }
-        .stateIn(
+
+    val notificationsEnabled = dataStore.data.map { preferences ->
+            preferences[notificationsEnabledKey] ?: false
+        }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
         )
 
-    val notificationInterval = dataStore.data
-        .map { preferences ->
-            preferences[notificationIntervalKey] ?: 1 // výchozí: 1 hodina
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = 1
+    val notificationInterval = dataStore.data.map { preferences ->
+            preferences[notificationIntervalKey] ?: 1
+        }.stateIn(
+            scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = 1
         )
 
-    val notificationContent = dataStore.data
-        .map { preferences ->
-            // Načteme hodnotu z DataStore a vrátíme odpovídající enum
-            val contentValue = preferences[notificationContentKey] ?: NotificationContent.TEPLOTA.name
-            NotificationContent.valueOf(contentValue) // Převádíme text zpět na enum
-        }
-        .stateIn(
+    val notificationContent = dataStore.data.map { preferences ->
+            val contentValue =
+                preferences[notificationContentKey] ?: NotificationContent.TEPLOTA.name
+            NotificationContent.valueOf(contentValue)
+        }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = NotificationContent.TEPLOTA // Výchozí hodnota: teplota
+            initialValue = NotificationContent.TEPLOTA
         )
 
-    // Funkce pro zapnutí/vypnutí notifikací
     fun updateNotificationsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             dataStore.edit { preferences ->
@@ -112,12 +99,10 @@ class SettingsViewModel(context: Context,
         }
     }
 
-    // Funkce pro nastavení intervalu notifikací
     fun updateNotificationInterval(interval: Int) {
         viewModelScope.launch {
             dataStore.edit { preferences ->
                 preferences[notificationIntervalKey] = interval
-                Log.d("SettingsViewModel", "Interval notifikací: $interval") // Log pro kontrolu
             }
         }
 
@@ -127,10 +112,8 @@ class SettingsViewModel(context: Context,
     fun updateNotificationContent(content: NotificationContent) {
         viewModelScope.launch {
             dataStore.edit { preferences ->
-                preferences[notificationContentKey] = content.name // Uložíme název enumu (např. "TEMPERATURE")
+                preferences[notificationContentKey] = content.name
             }
-            Log.d("SettingsViewModel", "Notifikace uloženy: ${content.name}") // Log pro kontrolu
-
         }
     }
 
@@ -160,7 +143,6 @@ class SettingsViewModel(context: Context,
             val objectJson = city?.let { repository.getRawLocationResponse(it, SetApi.getApi) }
 
             val locationKey = objectJson?.getString("Key")
-            Log.d("WeatherViewModel", "Získaný locationKey: $locationKey")
             locationKey?.let { saveLocationKey(it) }
         }
     }

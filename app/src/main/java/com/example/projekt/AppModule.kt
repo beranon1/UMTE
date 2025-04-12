@@ -17,45 +17,31 @@ import org.koin.dsl.module
 import java.util.concurrent.TimeUnit
 
 
-val repositoryModule = module{
+val repositoryModule = module {
     single { WeatherRepository(get()) }
 }
 
-val viewModelModule = module{
-    viewModel { (savedStateHandle: SavedStateHandle) ->
-        WeatherViewModel(get(), get(), savedStateHandle)
-    }
-    viewModel{ (savedStateHandle: SavedStateHandle) ->
-        WeatherDetailViewModel(get(), get(), savedStateHandle)
-    }
-    viewModel{ CityViewModel(get(),get())}
-
+val viewModelModule = module {
+    viewModel { WeatherViewModel(get(), get()) }
+    viewModel { WeatherDetailViewModel(get(), get()) }
+    viewModel { CityViewModel(get(), get()) }
     single { LocationProvider(androidContext()) }
-
-    viewModel{SettingsViewModel(get(),get(),get())}
+    viewModel { SettingsViewModel(get(), get(), get()) }
 }
 
 val appModule = module {
     single<WeatherApi> {
-        Retrofit.Builder()
-            .baseUrl("https://dataservice.accuweather.com/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .client(
-                OkHttpClient.Builder()
-                    .connectTimeout(30, TimeUnit.SECONDS)  // Časový limit pro připojení
-                    .writeTimeout(30, TimeUnit.SECONDS)    // Časový limit pro zápis
-                    .readTimeout(30, TimeUnit.SECONDS)     // Časový limit pro čtení
+        Retrofit.Builder().baseUrl("https://dataservice.accuweather.com/")
+            .addConverterFactory(GsonConverterFactory.create()).client(
+                OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS)
                     .addInterceptor { chain ->
-                        val request = chain.request().newBuilder()
-                            .addHeader("User-Agent", "MyWeatherApp/1.0") // Přidání User-Agent
-                            .addHeader("Accept", "application/json") // Přidání hlavičky Accept
-                            .build()
+                        val request =
+                            chain.request().newBuilder().addHeader("User-Agent", "MyWeatherApp/1.0")
+                                .addHeader("Accept", "application/json").build()
                         chain.proceed(request)
-                    }
-                    .build()
-            )
-            .build()
-            .create(WeatherApi::class.java)
+                    }.build()
+            ).build().create(WeatherApi::class.java)
     }
 }
 

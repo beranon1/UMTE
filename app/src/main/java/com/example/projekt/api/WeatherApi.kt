@@ -24,8 +24,7 @@ interface WeatherApi {
 
     @GET("locations/v1/cities/search")
     @Headers(
-        "Accept: application/json",
-        "User-Agent: MyWeatherApp/1.0"
+        "Accept: application/json", "User-Agent: MyWeatherApp/1.0"
     )
     suspend fun getLocation(
         @Query("q") city: String,
@@ -43,7 +42,7 @@ interface WeatherApi {
     suspend fun getCities(
         @Path("countryCode") countryCode: String,
         @Query("apikey") apiKey: String,
-        @Query("language") language: String = "cs" // Přidání češtiny jako výchozí jazyk
+        @Query("language") language: String = "cs"
     ): List<CityResponse>
 
     @GET("forecasts/v1/daily/5day/{locationKey}")

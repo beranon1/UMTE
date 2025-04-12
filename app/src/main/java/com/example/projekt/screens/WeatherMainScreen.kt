@@ -22,23 +22,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
 import com.example.projekt.responses.WeatherResponse
 import com.example.projekt.viewModels.WeatherViewModel
 import coil.compose.AsyncImage
-import com.example.projekt.api.SetApi
 import com.example.projekt.responses.DailyForecast
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun WeatherMainScreen(viewModel: WeatherViewModel= koinViewModel(), navController: NavHostController) {
+fun WeatherMainScreen(viewModel: WeatherViewModel = koinViewModel()) {
     val weather by viewModel.weatherData.collectAsState()
     val city by viewModel.city.observeAsState()
     val forecast by viewModel.forecastData.collectAsState()
     val location by viewModel.locationKey.observeAsState()
 
 
-    LaunchedEffect (Unit) {
+    LaunchedEffect(Unit) {
         viewModel.updateLocation()
 
     }
@@ -55,34 +53,36 @@ fun WeatherMainScreen(viewModel: WeatherViewModel= koinViewModel(), navControlle
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
-    ){
+    ) {
         if (weather == null) {
             CircularProgressIndicator(modifier = Modifier.size(50.dp))
         } else {
 
-        // Tlačítko pro získání polohy
-        Button(
-            onClick = { viewModel.updateLocation() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Získat polohu", tint = Color.White)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Získat aktuální polohu")
-        }
+            Button(
+                onClick = { viewModel.updateLocation() }, modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "Získat polohu",
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "Získat aktuální polohu")
+            }
 
-        Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
-        weather?.let { city?.let { it1 -> WeatherContent(it, it1) } }
+            weather?.let { city?.let { it1 -> WeatherContent(it, it1) } }
 
-        forecast?.let { forecastData ->
-            ForecastSection(forecastData.dailyForecasts) { date ->
-                if (date.contains(",")) { // Už přeformátované datum
-                    date
-                } else {
-                    viewModel.formatDate(date)
+            forecast?.let { forecastData ->
+                ForecastSection(forecastData.dailyForecasts) { date ->
+                    if (date.contains(",")) {
+                        date
+                    } else {
+                        viewModel.formatDate(date)
+                    }
                 }
             }
-        }
         }
     }
 }
@@ -90,8 +90,9 @@ fun WeatherMainScreen(viewModel: WeatherViewModel= koinViewModel(), navControlle
 @Composable
 fun ForecastSection(dailyForecasts: List<DailyForecast>, formatDate: (String) -> String) {
     Column(
-        modifier = Modifier.fillMaxWidth()
-        .verticalScroll(rememberScrollState()),
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         dailyForecasts.forEach { forecast ->
@@ -109,11 +110,12 @@ fun ForecastCard(forecast: DailyForecast, formatDate: (String) -> String) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(
-            modifier = Modifier.padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically
         ) {
-            // Ikona počasí
-            val iconUrl = "https://developer.accuweather.com/sites/default/files/${forecast.day.icon.toString().padStart(2, '0')}-s.png"
+
+            val iconUrl = "https://developer.accuweather.com/sites/default/files/${
+                forecast.day.icon.toString().padStart(2, '0')
+            }-s.png"
             AsyncImage(
                 model = iconUrl,
                 contentDescription = "Weather Icon",
@@ -122,10 +124,9 @@ fun ForecastCard(forecast: DailyForecast, formatDate: (String) -> String) {
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            // Datum a teploty
             Column {
                 Text(
-                    text = formatDate(forecast.date), // Použití funkce z ViewModelu
+                    text = formatDate(forecast.date),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -144,10 +145,6 @@ fun ForecastCard(forecast: DailyForecast, formatDate: (String) -> String) {
     }
 }
 
-
-
-
-
 @Composable
 fun WeatherContent(weather: WeatherResponse, location: String) {
     Column(
@@ -157,7 +154,7 @@ fun WeatherContent(weather: WeatherResponse, location: String) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // Město a stát
+
         Text(
             text = location,
             style = MaterialTheme.typography.headlineSmall,
@@ -169,16 +166,16 @@ fun WeatherContent(weather: WeatherResponse, location: String) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Ikona počasí
-        val iconUrl = "https://developer.accuweather.com/sites/default/files/${weather.weatherIcon.toString().padStart(2, '0')}-s.png"
+        val iconUrl = "https://developer.accuweather.com/sites/default/files/${
+            weather.weatherIcon.toString().padStart(2, '0')
+        }-s.png"
         AsyncImage(
-            model = iconUrl,
-            contentDescription = "Weather Icon",
-            modifier = Modifier.size(80.dp)
+            model = iconUrl, contentDescription = "Weather Icon", modifier = Modifier.size(80.dp)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Teplota
+
         Text(
             text = "${weather.temperature.metric.value}°C",
             style = MaterialTheme.typography.displaySmall,
@@ -188,11 +185,17 @@ fun WeatherContent(weather: WeatherResponse, location: String) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Další informace o počasí
+
         WeatherDetailRow(Icons.Default.WbSunny, "UV Index: ", "${weather.uvIndex}")
-        WeatherDetailRow(Icons.Default.EmojiPeople, "Pocitová teplota: ", weather.realFeelTemperature.metric.value.let { "$it °C" } ?: "N/A")
-        WeatherDetailRow(Icons.Default.AcUnit, "Minimální teplota: ", weather.temperatureSummary.past24HourRange.minTemperature.metric.value.let { "$it °C" } ?: "N/A")
-        WeatherDetailRow(Icons.Default.Whatshot, "Maximální teplota: ", weather.temperatureSummary.past24HourRange.maxTemperature.metric.value.let { "$it °C" } ?: "N/A")
+        WeatherDetailRow(Icons.Default.EmojiPeople,
+            "Pocitová teplota: ",
+            weather.realFeelTemperature.metric.value.let { "$it °C" } ?: "N/A")
+        WeatherDetailRow(Icons.Default.AcUnit,
+            "Minimální teplota: ",
+            weather.temperatureSummary.past24HourRange.minTemperature.metric.value.let { "$it °C" } ?: "N/A")
+        WeatherDetailRow(Icons.Default.Whatshot,
+            "Maximální teplota: ",
+            weather.temperatureSummary.past24HourRange.maxTemperature.metric.value.let { "$it °C" } ?: "N/A")
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -222,19 +225,17 @@ fun WeatherDetailRow(icon: ImageVector, label: String, value: String) {
             modifier = Modifier.size(24.dp)
         )
 
-        Spacer(modifier = Modifier.width(8.dp)) // Mezera mezi ikonou a textem
+        Spacer(modifier = Modifier.width(8.dp))
 
         Text(
-            text = label,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f) // Zajišťuje zarovnání popisku doleva
+            text = label, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f)
         )
 
         Text(
             text = value,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f), // Zajišťuje zarovnání hodnoty doprava
-            textAlign = TextAlign.End // Zarovnání textu na pravou stranu
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.End
         )
     }
 }

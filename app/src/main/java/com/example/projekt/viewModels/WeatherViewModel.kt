@@ -1,9 +1,7 @@
 package com.example.projekt.viewModels
-//64NX3BTzlZHPGtNYktXmpVOUd6wjOm9I
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projekt.api.SetApi
@@ -22,9 +20,7 @@ import java.util.Date
 import java.util.Locale
 
 class WeatherViewModel(
-    private val repository: WeatherRepository,
-    private val locationProvider: LocationProvider,
-    private val savedStateHandle: SavedStateHandle
+    private val repository: WeatherRepository, private val locationProvider: LocationProvider
 ) : ViewModel() {
 
     private val _weatherData = MutableStateFlow<WeatherResponse?>(null)
@@ -36,7 +32,7 @@ class WeatherViewModel(
     private val _forecastData = MutableStateFlow<DayForecastResponse?>(null)
     val forecastData: StateFlow<DayForecastResponse?> = _forecastData.asStateFlow()
 
-    private val _city = MutableLiveData(savedStateHandle.get<String>("city") ?: "Pardubice")
+    private val _city = MutableLiveData<String>("Pardubice") // výchozí město
     val city: LiveData<String> = _city
 
     private val _locationKey = MutableLiveData<String>()
@@ -44,7 +40,7 @@ class WeatherViewModel(
 
     fun fetchLocationKey(city: String, apiKey: String) {
         viewModelScope.launch {
-                val objectJson = repository.getRawLocationResponse(city, apiKey)
+            val objectJson = repository.getRawLocationResponse(city, apiKey)
 
             try {
                 val locationKey = objectJson?.getString("Key")
@@ -58,11 +54,10 @@ class WeatherViewModel(
     }
 
 
-    fun fetchWeather(locationKey: String, apiKey: String){
+    fun fetchWeather(locationKey: String, apiKey: String) {
         viewModelScope.launch {
             try {
                 val weatherResponse = repository.getWeather(locationKey, apiKey)
-                //Log.d("WeatherViewModel", "Získaný locationKey: $locationKey")
                 _weatherData.value = weatherResponse
 
             } catch (e: Exception) {
@@ -73,21 +68,18 @@ class WeatherViewModel(
 
     fun updateCity(newCity: String) {
         _city.value = newCity
-        //savedStateHandle["city"] = newCity // Uloží město do SavedStateHandle
         fetchLocationKey(newCity, SetApi.getApi)
     }
 
     fun updateLocation() {
         viewModelScope.launch {
-            val currentCity = locationProvider.getCityName() // ✅ Získání názvu města
-            //savedStateHandle["city"] = currentCity
+            val currentCity = locationProvider.getCityName()
             if (currentCity != null) {
                 updateCity(currentCity)
             }
         }
     }
 
-    // Funkce pro aktualizaci počasí pro jedno město
     fun updateCityWeather(cityName: String) {
         viewModelScope.launch {
             val objectJson = repository.getRawLocationResponse(cityName, SetApi.getApi)
@@ -105,30 +97,23 @@ class WeatherViewModel(
         }
     }
 
-    // Funkce pro načtení počasí pro všechna města
     fun updateWeatherForCities(cities: List<String>) {
         cities.forEach { cityName ->
             updateCityWeather(cityName)
         }
     }
 
-    // 🌦️ **Nová funkce pro získání 5denní předpovědi**
     fun fetchForecast(locationKey: String) {
         viewModelScope.launch {
 
             try {
-                //Log.d("WeatherViewModel", "Načítání předpovědi pro $locationKey")
                 val forecastResponse = repository.getFiveDayForecast(locationKey, SetApi.getApi)
-                //Log.d("WeatherViewModel", "Response předpovědi: $forecastResponse")
-                // Přeformátování datumu
-                val formattedForecast = forecastResponse.copy(
-                    dailyForecasts = forecastResponse.dailyForecasts.map { forecast ->
+                val formattedForecast =
+                    forecastResponse.copy(dailyForecasts = forecastResponse.dailyForecasts.map { forecast ->
                         forecast.copy(date = formatDate(forecast.date))
-                    }
-                )
+                    })
 
                 _forecastData.value = formattedForecast
-                //Log.d("WeatherViewModel", "Předpověď uložena do _forecastData")
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Chyba při načítání předpovědi: ${e.message}")
             }
@@ -137,12 +122,13 @@ class WeatherViewModel(
 
     fun formatDate(dateString: String): String {
         return try {
-            // Pokud obsahuje den v týdnu (např. "5. dubna (sobota)"), nebudeme provádět žádnou konverzi
-            if (dateString.contains("(") && dateString.contains(")") || dateString.contains("Dnes") || dateString.contains("Včera")) {
+            if (dateString.contains("(") && dateString.contains(")") || dateString.contains("Dnes") || dateString.contains(
+                    "Včera"
+                )
+            ) {
                 return dateString
             }
 
-            // Standardní formátování datumu
             val originalFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())
             val targetFormat = SimpleDateFormat("d. MMMM (EEEE)", Locale("cs", "CZ"))
             val date: Date? = originalFormat.parse(dateString)
@@ -164,13 +150,18 @@ class WeatherViewModel(
                 yesterday.set(Calendar.SECOND, 0)
                 yesterday.set(Calendar.MILLISECOND, 0)
 
-                // Porovnání pouze data (den, měsíc, rok)
-                if (calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) && calendar.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)) {
+                if (calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) && calendar.get(Calendar.DAY_OF_YEAR) == today.get(
+                        Calendar.DAY_OF_YEAR
+                    )
+                ) {
                     "Dnes"
-                } else if (calendar.get(Calendar.YEAR) == yesterday.get(Calendar.YEAR) && calendar.get(Calendar.DAY_OF_YEAR) == yesterday.get(Calendar.DAY_OF_YEAR)) {
+                } else if (calendar.get(Calendar.YEAR) == yesterday.get(Calendar.YEAR) && calendar.get(
+                        Calendar.DAY_OF_YEAR
+                    ) == yesterday.get(Calendar.DAY_OF_YEAR)
+                ) {
                     "Včera"
                 } else {
-                    targetFormat.format(it) // Pokud není dnes nebo včera, vrátí formátované datum
+                    targetFormat.format(it)
                 }
             } ?: dateString
         } catch (e: Exception) {

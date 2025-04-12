@@ -2,7 +2,6 @@ package com.example.projekt.viewModels
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.Composable
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -22,9 +21,8 @@ val Context.dataStore by preferencesDataStore(name = "favourite_cities")
 val FAVOURITE_CITIES_KEY = stringSetPreferencesKey("favourite_cities")
 
 
-class CityViewModel (
-    private val repository: WeatherRepository,
-    private val context: Context
+class CityViewModel(
+    private val repository: WeatherRepository, private val context: Context
 ) : ViewModel() {
 
     private val _cityData = MutableLiveData<List<CityResponse>>()
@@ -35,7 +33,6 @@ class CityViewModel (
 
             try {
                 val response = repository.getCities("CZ", SetApi.getApi)
-                //Log.d("WeatherViewModel", "Získaná města: $response")
                 _cityData.value = response
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Chyba při načítání počasí: ${e.message}")
@@ -43,7 +40,6 @@ class CityViewModel (
         }
     }
 
-    // Uložení města do DataStore
     fun saveCityToDataStore(cityName: String) {
         viewModelScope.launch {
             context.dataStore.edit { preferences ->
@@ -53,22 +49,20 @@ class CityViewModel (
         }
     }
 
-    // Načtení oblíbených měst z DataStore
     fun getFavouriteCitiesFromDataStore(onResult: (Set<String>) -> Unit) {
         viewModelScope.launch {
-            val cities = context.dataStore.data
-                .map { preferences -> preferences[FAVOURITE_CITIES_KEY] ?: emptySet() }
-                .first()
+            val cities = context.dataStore.data.map { preferences ->
+                    preferences[FAVOURITE_CITIES_KEY] ?: emptySet()
+                }.first()
             onResult(cities)
         }
     }
 
-    // Funkce pro odstranění města z DataStore
     fun removeCityFromDataStore(cityName: String) {
         viewModelScope.launch {
             context.dataStore.edit { preferences ->
                 val currentCities = preferences[FAVOURITE_CITIES_KEY] ?: emptySet()
-                preferences[FAVOURITE_CITIES_KEY] = currentCities - cityName  // Odstraní město
+                preferences[FAVOURITE_CITIES_KEY] = currentCities - cityName
             }
         }
     }

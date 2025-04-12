@@ -14,11 +14,9 @@ class WeatherRepository(private val apiService: WeatherApi) {
 
     suspend fun getWeather(locationKey: String, apiKey: String): WeatherResponse {
         val response = apiService.getWeather(locationKey, apiKey)
-        //Log.d("WeatherRepository", "Výpis response:  $response")
 
-        // Pokud API vrací pole, vezmeme první objekt
         return if (response.isNotEmpty()) {
-            response[0]  // Vrátíme první objekt v poli
+            response[0]
         } else {
             throw Exception("Prázdná odpověď z API")
         }
@@ -27,11 +25,10 @@ class WeatherRepository(private val apiService: WeatherApi) {
 
     suspend fun getRawLocationResponse(city: String, apiKey: String): JSONObject? {
         val response = apiService.getLocation(city, apiKey)
-        val rawJson = response.body()?.string() // Převod ResponseBody na String
-        //Log.d("WeatherRepository", "Muj výpis rawJSON: $rawJson")
+        val rawJson = response.body()?.string()
         return try {
-            val jsonArray = JSONArray(rawJson) // Převod na JSON pole
-                jsonArray.getJSONObject(0) // Vrácení prvního objektu v poli
+            val jsonArray = JSONArray(rawJson)
+            jsonArray.getJSONObject(0)
         } catch (e: Exception) {
             Log.e("WeatherRepository", "Chyba při parsování JSON: ${e.message}")
             null
@@ -41,7 +38,7 @@ class WeatherRepository(private val apiService: WeatherApi) {
     suspend fun getWeatherDetail(locationKey: String, apiKey: String): WeatherDetailResponse {
         val response = apiService.getWeatherDetail(locationKey, apiKey)
         return if (response.isNotEmpty()) {
-            response[0]  // Vrátíme první objekt v poli
+            response[0]
         } else {
             throw Exception("Prázdná odpověď z API Detail")
         }
@@ -49,9 +46,8 @@ class WeatherRepository(private val apiService: WeatherApi) {
 
     suspend fun getCities(countryCode: String, apiKey: String): List<CityResponse> {
         val response = apiService.getCities(countryCode, apiKey)
-        //Log.d("WeatherRepository", "Výpis response:  $response")
         return if (response.isNotEmpty()) {
-            response  // Vrátíme první objekt v poli
+            response
         } else {
             throw Exception("Prázdná odpověď z API Detail")
         }
@@ -60,7 +56,6 @@ class WeatherRepository(private val apiService: WeatherApi) {
     suspend fun getFiveDayForecast(locationKey: String, apiKey: String): DayForecastResponse {
         return try {
             val response = apiService.getFiveDayForecast(locationKey, apiKey)
-            //Log.d("WeatherRepository", "Předpověď získána: $response")
             response
         } catch (e: Exception) {
             Log.e("WeatherRepository", "Chyba při načítání předpovědi: ${e.message}")
@@ -68,11 +63,12 @@ class WeatherRepository(private val apiService: WeatherApi) {
         }
     }
 
-    suspend fun getHourlyForecast(locationKey: String, apiKey: String): List<HourlyForecastResponse> {
+    suspend fun getHourlyForecast(
+        locationKey: String, apiKey: String
+    ): List<HourlyForecastResponse> {
         return try {
             val response = apiService.getHourlyForecast(locationKey, apiKey)
-            //Log.d("WeatherRepository", "Hodinová předpověď získána: $response")
-            response // Předpokládáme, že apiService vrátí seznam objektů HourlyForecastResponse
+            response
         } catch (e: Exception) {
             Log.e("WeatherRepository", "Chyba při načítání hodinové předpovědi: ${e.message}")
             throw e

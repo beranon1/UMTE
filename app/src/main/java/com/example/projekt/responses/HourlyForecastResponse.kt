@@ -14,8 +14,8 @@ data class HourlyForecastResponse(
 )
 
 data class TemperatureHour(
-     @SerializedName("Value") val value: Double,
-     @SerializedName("Unit") val unit: String,
-     @SerializedName("UnitType") val unitType: Int
+    @SerializedName("Value") val value: Double,
+    @SerializedName("Unit") val unit: String,
+    @SerializedName("UnitType") val unitType: Int
 )
 

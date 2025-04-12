@@ -1,7 +1,5 @@
 package com.example.projekt.screens
 
-import android.util.Log
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,14 +32,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
-import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.projekt.responses.HourlyForecastResponse
 import com.example.projekt.viewModels.WeatherDetailViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun DetailScreen(navController: NavController, viewModel: WeatherDetailViewModel = koinViewModel()) {
+fun DetailScreen(viewModel: WeatherDetailViewModel = koinViewModel()) {
     val weather by viewModel.weatherDetailData.observeAsState()
     val hourlyForecast by viewModel.hourlyForecastData.observeAsState()
     val location by viewModel.locationKey.observeAsState()
@@ -52,7 +49,6 @@ fun DetailScreen(navController: NavController, viewModel: WeatherDetailViewModel
     }
     LaunchedEffect(location) {
         location?.let {
-            Log.d("Location key", "Spouštím hodinovou předpověď pro: $it")
             viewModel.fetchHourlyForecast(it)
         }
     }
@@ -63,7 +59,6 @@ fun DetailScreen(navController: NavController, viewModel: WeatherDetailViewModel
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Pokud data nejsou ještě načtena, zobrazíme indikátor načítání
         if (weather == null) {
             CircularProgressIndicator(modifier = Modifier.size(50.dp))
         } else {
@@ -78,46 +73,40 @@ fun DetailScreen(navController: NavController, viewModel: WeatherDetailViewModel
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            WeatherDetailRow(
-                Icons.Default.WbSunny,
+            WeatherDetailRow(Icons.Default.WbSunny,
                 "Vlhkost vzduchu: ",
                 weather?.relativeHumidity.let { "$it %" })
-            WeatherDetailRow(
-                Icons.Default.Air,
+            WeatherDetailRow(Icons.Default.Air,
                 "Rychlost větru: ",
                 weather?.wind?.speed?.metric?.value.let { "$it ${weather?.wind?.speed?.metric?.unit} - ${weather?.wind?.direction?.english}" })
-            WeatherDetailRow(
-                Icons.Default.Visibility,
+            WeatherDetailRow(Icons.Default.Visibility,
                 "Viditelnost: ",
                 weather?.visibility?.metric?.value.let { "$it ${weather?.visibility?.metric?.unit}" })
-            WeatherDetailRow(
-                Icons.Default.Cloud,
+            WeatherDetailRow(Icons.Default.Cloud,
                 "Oblačnost: ",
                 weather?.cloudCover.let { "$it %" })
-            WeatherDetailRow(
-                Icons.Default.PanTool,
+            WeatherDetailRow(Icons.Default.PanTool,
                 "Tlak: ",
                 weather?.pressure?.metric?.value.let { "$it ${weather?.pressure?.metric?.unit}" })
-            WeatherDetailRow(
-                Icons.Default.WaterDrop,
+            WeatherDetailRow(Icons.Default.WaterDrop,
                 "Množství srážek: ",
                 weather?.precipitationSummary?.past24Hours?.metric?.value.let { "$it ${weather?.precipitationSummary?.past24Hours?.metric?.unit}" })
 
             Spacer(modifier = Modifier.height(15.dp))
 
-        Text(
-            text = "Hodinová předpověď",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            fontSize = 4.em,
-            textAlign = TextAlign.Left,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-            // Zobrazení hodinové předpovědi
+            Text(
+                text = "Hodinová předpověď",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                fontSize = 4.em,
+                textAlign = TextAlign.Left,
+                color = MaterialTheme.colorScheme.onBackground
+            )
             if (hourlyForecast != null) {
-                Column(modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
                 ) {
                     hourlyForecast?.forEach { forecast ->
                         HourlyForecastRow(forecast, viewModel)
@@ -142,7 +131,9 @@ fun HourlyForecastRow(forecast: HourlyForecastResponse, viewModel: WeatherDetail
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val iconUrl = "https://developer.accuweather.com/sites/default/files/${forecast.weatherIcon.toString().padStart(2, '0')}-s.png"
+            val iconUrl = "https://developer.accuweather.com/sites/default/files/${
+                forecast.weatherIcon.toString().padStart(2, '0')
+            }-s.png"
             val formattedTime = viewModel.formatDateAndTime(forecast.dateTime)
 
             Spacer(modifier = Modifier.width(25.dp))

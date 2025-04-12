@@ -3,7 +3,6 @@ package com.example.projekt.viewModels
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.projekt.api.SetApi
@@ -16,10 +15,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class WeatherDetailViewModel (
-    private val repository: WeatherRepository,
-    private val locationProvider: LocationProvider,
-    private val savedStateHandle: SavedStateHandle
+class WeatherDetailViewModel(
+    private val repository: WeatherRepository, private val locationProvider: LocationProvider
 ) : ViewModel() {
 
     private val _weatherDetailData = MutableLiveData<WeatherDetailResponse?>()
@@ -28,7 +25,7 @@ class WeatherDetailViewModel (
     private val _hourlyForecastData = MutableLiveData<List<HourlyForecastResponse>>()
     val hourlyForecastData: LiveData<List<HourlyForecastResponse>> = _hourlyForecastData
 
-    private val _city = MutableLiveData(savedStateHandle.get<String>("city") ?: "Pardubice")
+    private val _city = MutableLiveData<String>("Pardubice") // výchozí město
     val city: LiveData<String> = _city
 
     private val _locationKey = MutableLiveData<String>()
@@ -53,7 +50,6 @@ class WeatherDetailViewModel (
         viewModelScope.launch {
             try {
                 val weatherDetailResponse = repository.getWeatherDetail(locationKey, apiKey)
-                //Log.d("WeatherViewModel", "Získaný locationKey: $locationKey")
                 _weatherDetailData.value = weatherDetailResponse
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Chyba při načítání počasí: ${e.message}")
@@ -63,13 +59,12 @@ class WeatherDetailViewModel (
 
     fun updateCity(newCity: String) {
         _city.value = newCity
-        savedStateHandle["city"] = newCity // Uloží město do SavedStateHandle
         fetchLocationKey(newCity, SetApi.getApi)
     }
 
     fun updateLocation() {
         viewModelScope.launch {
-            val currentCity = locationProvider.getCityName() // ✅ Získání názvu města
+            val currentCity = locationProvider.getCityName()
             if (currentCity != null) {
                 updateCity(currentCity)
             }
@@ -79,8 +74,8 @@ class WeatherDetailViewModel (
     fun fetchHourlyForecast(locationKey: String) {
         viewModelScope.launch {
             try {
-                val hourlyForecastResponse = repository.getHourlyForecast(locationKey, SetApi.getApi)
-                //Log.d("WeatherViewModel", "Hodinová předpověď: $hourlyForecastResponse")
+                val hourlyForecastResponse =
+                    repository.getHourlyForecast(locationKey, SetApi.getApi)
                 _hourlyForecastData.value = hourlyForecastResponse
             } catch (e: Exception) {
                 Log.e("WeatherViewModel", "Chyba při načítání hodinové předpovědi: ${e.message}")
@@ -88,7 +83,6 @@ class WeatherDetailViewModel (
         }
     }
 
-    // 📅 Funkce pro přeformátování data a času
     fun formatDateAndTime(dateTimeString: String): String {
         return try {
             val originalFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())

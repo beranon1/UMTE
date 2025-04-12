@@ -22,40 +22,26 @@ import androidx.navigation.compose.*
 import com.example.projekt.screens.*
 import com.example.projekt.ui.theme.ProjektTheme
 import com.example.projekt.viewModels.WeatherViewModel
-import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.compose.koinViewModel
-import org.koin.core.context.startKoin
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.Context
 import android.os.Build
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import com.example.projekt.viewModels.SettingsViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-       /* startKoin {
-            androidContext(this@MainActivity)
-            modules(appModule, repositoryModule, viewModelModule)
-        }*/
-
         createNotificationChannel()
         checkAndRequestPermissions()
         setContent {
             val navController = rememberNavController()
 
-
-            // 👉 Získání SettingsViewModel
-
             val settingsViewModel: SettingsViewModel = koinViewModel()
 
             val isDarkTheme by settingsViewModel.isDarkTheme.collectAsState()
 
-            // ✅ Předání hodnoty motivu do ProjektTheme
             ProjektTheme(darkTheme = isDarkTheme) {
                 WeatherApp(navController)
             }
@@ -77,7 +63,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkAndRequestPermissions() {
-        val locationPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+        val locationPermission =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
         if (locationPermission != PackageManager.PERMISSION_GRANTED) {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
@@ -96,23 +83,18 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WeatherApp( navController: NavHostController) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Weather App",
-                        color = MaterialTheme.colorScheme.onPrimary // kontrastní text
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary // automaticky světlé/tmavé pozadí
+fun WeatherApp(navController: NavHostController) {
+    Scaffold(topBar = {
+        TopAppBar(
+            title = {
+                Text(
+                    text = "Weather App", color = MaterialTheme.colorScheme.onPrimary
                 )
+            }, colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primary
             )
-        },
-        bottomBar = { BottomNavigationBar(navController) }
-    ) { innerPadding ->
+        )
+    }, bottomBar = { BottomNavigationBar(navController) }) { innerPadding ->
         Navigation(navController = navController, innerPadding = innerPadding)
     }
 }
@@ -123,15 +105,15 @@ fun Navigation(navController: NavHostController, innerPadding: PaddingValues) {
     NavHost(
         navController = navController,
         startDestination = "main",
-        modifier = Modifier.padding(innerPadding) // 🛠 Aplikace paddingu
+        modifier = Modifier.padding(innerPadding)
     ) {
         composable("main") {
             val viewModel: WeatherViewModel = koinViewModel()
-            WeatherMainScreen(viewModel, navController)
+            WeatherMainScreen(viewModel)
         }
-        composable("detail") { DetailScreen(navController) }
+        composable("detail") { DetailScreen() }
         composable("favourites") { FavouriteCityScreen() }
-        composable("settings") { SettingScreen(navController) }
+        composable("settings") { SettingScreen() }
     }
 }
 
@@ -146,27 +128,12 @@ fun BottomNavigationBar(navController: NavHostController) {
     NavigationBar {
         val currentRoute = navController.currentDestination?.route
         items.forEach { item ->
-            NavigationBarItem(
-                icon = { Icon(item.icon, contentDescription = item.title) },
+            NavigationBarItem(icon = { Icon(item.icon, contentDescription = item.title) },
                 label = { Text(item.title) },
                 selected = currentRoute == item.screenRoute,
-                onClick = { navController.navigate(item.screenRoute) }
-            )
+                onClick = { navController.navigate(item.screenRoute) })
         }
     }
-}
-
-fun showTestNotification(context: Context) {
-    val builder = NotificationCompat.Builder(context, "weather_channel")
-        .setSmallIcon(R.drawable.ic_launcher_foreground) // Tady zajisti, že máš platnou ikonu!
-        .setContentTitle("Test Notifikace")
-        .setContentText("Tohle je testovací notifikace o počasí.")
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        .setAutoCancel(true) // Notifikace zmizí po kliknutí
-        .setDefaults(NotificationCompat.DEFAULT_ALL) // Využití všech výchozích signálů, jako zvuk, vibrace
-
-    val notificationManager = NotificationManagerCompat.from(context)
-    notificationManager.notify(1001, builder.build())
 }
 
 data class BottomNavItem(val title: String, val icon: ImageVector, val screenRoute: String)
